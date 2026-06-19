@@ -3,7 +3,12 @@
   right: 24px;
   bottom: 24px;
   z-index: 2147483647;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
 }
 
 .flatmap-button {
