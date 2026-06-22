@@ -5,3 +5,8 @@ export type LocationCandidate = {
   label: string
   precision: LocationPrecision
 }
+
+export type ResolvedLocation = LocationCandidate & {
+  coordinates: [longitude: number, latitude: number]
+  boundingBox?: [west: number, south: number, east: number, north: number]
+}
