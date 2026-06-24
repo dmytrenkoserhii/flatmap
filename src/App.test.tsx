@@ -22,6 +22,20 @@ const successResult: GeocodingResult = {
   ok: true,
 }
 
+const nextCandidate: LocationCandidate = {
+  label: 'вул Деміївська 16',
+  precision: 'address',
+  query: 'вул Деміївська 16, Київ',
+}
+
+const nextSuccessResult: GeocodingResult = {
+  location: {
+    ...nextCandidate,
+    coordinates: [30.5, 50.4],
+  },
+  ok: true,
+}
+
 function StubMap({ location }: { apiKey: string; location: ResolvedLocation }) {
   return <div data-testid="map-view">{location.label}</div>
 }
@@ -102,6 +116,95 @@ describe('App', () => {
 
     expect(screen.getByTestId('map-view')).toBeInTheDocument()
     expect(geocodeCandidates).toHaveBeenCalledTimes(1)
+  })
+
+  it('reloads listing location when the OLX URL changes while the panel is open', async () => {
+    const user = userEvent.setup()
+    const geocodeCandidates = vi
+      .fn()
+      .mockResolvedValueOnce(successResult)
+      .mockResolvedValueOnce(nextSuccessResult)
+    const resolveCandidates = vi
+      .fn()
+      .mockReturnValueOnce([candidate])
+      .mockReturnValueOnce([nextCandidate])
+
+    const { rerender } = render(
+      <App
+        apiKey="test-key"
+        currentPageUrl="https://www.olx.ua/d/uk/obyavlenie/one.html"
+        geocodeCandidates={geocodeCandidates}
+        MapComponent={StubMap}
+        navigationReloadDelayMs={0}
+        resolveCandidates={resolveCandidates}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'FlatMap' }))
+    expect(await screen.findByTestId('map-view')).toHaveTextContent(
+      resolvedLocation.label,
+    )
+
+    rerender(
+      <App
+        apiKey="test-key"
+        currentPageUrl="https://www.olx.ua/d/uk/obyavlenie/two.html"
+        geocodeCandidates={geocodeCandidates}
+        MapComponent={StubMap}
+        navigationReloadDelayMs={0}
+        resolveCandidates={resolveCandidates}
+      />,
+    )
+
+    await waitFor(() => expect(geocodeCandidates).toHaveBeenCalledTimes(2))
+    expect(await screen.findByTestId('map-view')).toHaveTextContent(
+      nextCandidate.label,
+    )
+  })
+
+  it('clears cached location when the OLX URL changes while the panel is closed', async () => {
+    const user = userEvent.setup()
+    const geocodeCandidates = vi
+      .fn()
+      .mockResolvedValueOnce(successResult)
+      .mockResolvedValueOnce(nextSuccessResult)
+    const resolveCandidates = vi
+      .fn()
+      .mockReturnValueOnce([candidate])
+      .mockReturnValueOnce([nextCandidate])
+
+    const { rerender } = render(
+      <App
+        apiKey="test-key"
+        currentPageUrl="https://www.olx.ua/d/uk/obyavlenie/one.html"
+        geocodeCandidates={geocodeCandidates}
+        MapComponent={StubMap}
+        navigationReloadDelayMs={0}
+        resolveCandidates={resolveCandidates}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'FlatMap' }))
+    expect(await screen.findByTestId('map-view')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Закрити FlatMap' }))
+
+    rerender(
+      <App
+        apiKey="test-key"
+        currentPageUrl="https://www.olx.ua/d/uk/obyavlenie/two.html"
+        geocodeCandidates={geocodeCandidates}
+        MapComponent={StubMap}
+        navigationReloadDelayMs={0}
+        resolveCandidates={resolveCandidates}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'FlatMap' }))
+
+    await waitFor(() => expect(geocodeCandidates).toHaveBeenCalledTimes(2))
+    expect(await screen.findByTestId('map-view')).toHaveTextContent(
+      nextCandidate.label,
+    )
   })
 
   it('retries geocoding after an error', async () => {

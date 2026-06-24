@@ -16,10 +16,20 @@ type GeocodingFeatureLike = {
   bbox?: readonly number[]
 }
 
+type GeocodingBias = {
+  bbox: [west: number, south: number, east: number, north: number]
+  proximity: [longitude: number, latitude: number]
+}
+
 type ForwardGeocode = (
   query: string,
   options: GeocodingOptions,
 ) => Promise<{ features: GeocodingFeatureLike[] }>
+
+const KYIV_BIAS: GeocodingBias = {
+  bbox: [30.2, 50.2, 30.85, 50.6],
+  proximity: [30.5234, 50.4501],
+}
 
 export async function geocodeLocationCandidates(
   candidates: LocationCandidate[],
@@ -38,35 +48,79 @@ export async function geocodeLocationCandidates(
     let response: { features: GeocodingFeatureLike[] }
 
     try {
+      const bias = getGeocodingBias(candidate.query)
+
       response = await forwardGeocode(candidate.query, {
         apiKey,
         autocomplete: false,
+        bbox: bias?.bbox,
         country: ['ua'],
+        fuzzyMatch: false,
         language: 'uk',
-        limit: 1,
+        limit: 5,
+        proximity: bias?.proximity,
+        types: candidate.precision === 'address' ? ['address'] : undefined,
       })
+
+      const feature = pickBestFeature(response.features, bias)
+
+      if (!feature) {
+        continue
+      }
+
+      const coordinates = toCoordinates(feature.center)
+
+      if (!coordinates) {
+        continue
+      }
+
+      return {
+        ok: true,
+        location: {
+          ...candidate,
+          coordinates,
+          boundingBox: toBoundingBox(feature.bbox),
+        },
+      }
     } catch {
       return { ok: false, code: 'request-failed' }
-    }
-
-    const feature = response.features[0]
-    const coordinates = toCoordinates(feature?.center)
-
-    if (!coordinates) {
-      continue
-    }
-
-    return {
-      ok: true,
-      location: {
-        ...candidate,
-        coordinates,
-        boundingBox: toBoundingBox(feature.bbox),
-      },
     }
   }
 
   return { ok: false, code: 'no-results' }
+}
+
+function getGeocodingBias(query: string): GeocodingBias | null {
+  return /(^|[^\p{L}])(київ|киев|kyiv|kiev)(?=$|[^\p{L}])/iu.test(query)
+    ? KYIV_BIAS
+    : null
+}
+
+function pickBestFeature(
+  features: GeocodingFeatureLike[],
+  bias: GeocodingBias | null,
+): GeocodingFeatureLike | undefined {
+  if (!bias) {
+    return features[0]
+  }
+
+  return features.find((feature) => {
+    const coordinates = toCoordinates(feature.center)
+
+    return coordinates ? isInsideBoundingBox(coordinates, bias.bbox) : false
+  })
+}
+
+function isInsideBoundingBox(
+  [longitude, latitude]: ResolvedLocation['coordinates'],
+  [west, south, east, north]: GeocodingBias['bbox'],
+): boolean {
+  return (
+    longitude >= west &&
+    longitude <= east &&
+    latitude >= south &&
+    latitude <= north
+  )
 }
 
 function toCoordinates(

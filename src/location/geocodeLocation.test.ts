@@ -61,9 +61,39 @@ describe('geocodeLocationCandidates', () => {
     expect(forwardGeocode).toHaveBeenCalledWith(addressCandidate.query, {
       apiKey: 'test-key',
       autocomplete: false,
+      bbox: [30.2, 50.2, 30.85, 50.6],
       country: ['ua'],
+      fuzzyMatch: false,
       language: 'uk',
-      limit: 1,
+      limit: 5,
+      proximity: [30.5234, 50.4501],
+      types: ['address'],
+    })
+  })
+
+  it('chooses an address result inside Kyiv when MapTiler returns a distant result first', async () => {
+    const demiyivskaCandidate: LocationCandidate = {
+      label: 'вул деміївська 16',
+      query: 'вул деміївська 16, Київ, Голосіївський',
+      precision: 'address',
+    }
+    const forwardGeocode = vi.fn().mockResolvedValue({
+      features: [{ center: [30.48, 50.75] }, { center: [30.51, 50.4] }],
+    })
+
+    await expect(
+      geocodeLocationCandidates(
+        [demiyivskaCandidate],
+        'test-key',
+        forwardGeocode,
+      ),
+    ).resolves.toEqual({
+      ok: true,
+      location: {
+        ...demiyivskaCandidate,
+        coordinates: [30.51, 50.4],
+        boundingBox: undefined,
+      },
     })
   })
 

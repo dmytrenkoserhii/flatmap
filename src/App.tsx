@@ -1,4 +1,10 @@
-import { useCallback, useState, type ComponentType } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+} from 'react'
 import { mapTilerApiKey } from './config/maptiler'
 import MapView from './components/MapView'
 import { extractOlxLocationCandidates } from './location/extractOlxLocation'
@@ -16,9 +22,12 @@ type FlatMapViewProps = {
 
 type AppProps = {
   apiKey?: string | null
+  currentPageUrl?: string
   geocodeCandidates?: typeof geocodeLocationCandidates
   MapComponent?: ComponentType<FlatMapViewProps>
+  navigationReloadDelayMs?: number
   resolveCandidates?: () => LocationCandidate[]
+  urlPollIntervalMs?: number
 }
 
 const errorMessages: Record<GeocodingFailureCode, string> = {
@@ -31,29 +40,66 @@ const errorMessages: Record<GeocodingFailureCode, string> = {
 
 function App({
   apiKey = mapTilerApiKey,
+  currentPageUrl,
   geocodeCandidates = geocodeLocationCandidates,
   MapComponent = MapView,
+  navigationReloadDelayMs = 700,
   resolveCandidates = () => extractOlxLocationCandidates(document),
+  urlPollIntervalMs = 500,
 }: AppProps = {}) {
+  const observedPageUrl = useCurrentPageUrl(urlPollIntervalMs)
+  const pageUrl = currentPageUrl ?? observedPageUrl
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<GeocodingResult | null>(null)
+  const requestIdRef = useRef(0)
+  const previousPageUrlRef = useRef(pageUrl)
 
   const loadLocation = useCallback(async () => {
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+
     if (!apiKey) {
       setResult({ ok: false, code: 'missing-api-key' })
       return
     }
 
     setIsLoading(true)
-    setResult(null)
+    setResult((currentResult) => (currentResult?.ok ? currentResult : null))
 
     const candidates = resolveCandidates()
     const nextResult = await geocodeCandidates(candidates, apiKey)
 
+    if (requestId !== requestIdRef.current) {
+      return
+    }
+
     setResult(nextResult)
     setIsLoading(false)
   }, [apiKey, geocodeCandidates, resolveCandidates])
+
+  useEffect(() => {
+    if (previousPageUrlRef.current === pageUrl) {
+      return
+    }
+
+    previousPageUrlRef.current = pageUrl
+    requestIdRef.current += 1
+    setIsLoading(false)
+    setResult((currentResult) =>
+      isOpen && currentResult?.ok ? currentResult : null,
+    )
+
+    if (!isOpen) {
+      return
+    }
+
+    const reloadTimer = window.setTimeout(() => {
+      void loadLocation()
+    }, navigationReloadDelayMs)
+
+    return () => window.clearTimeout(reloadTimer)
+  }, [isOpen, loadLocation, navigationReloadDelayMs, pageUrl])
 
   const openPanel = () => {
     setIsOpen(true)
@@ -128,6 +174,36 @@ function App({
       ) : null}
     </div>
   )
+}
+
+function useCurrentPageUrl(pollIntervalMs: number): string {
+  const [pageUrl, setPageUrl] = useState(() => window.location.href)
+
+  useEffect(() => {
+    let previousUrl = window.location.href
+
+    const updatePageUrl = () => {
+      const nextUrl = window.location.href
+
+      if (nextUrl !== previousUrl) {
+        previousUrl = nextUrl
+        setPageUrl(nextUrl)
+      }
+    }
+
+    window.addEventListener('hashchange', updatePageUrl)
+    window.addEventListener('popstate', updatePageUrl)
+
+    const timer = window.setInterval(updatePageUrl, pollIntervalMs)
+
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('hashchange', updatePageUrl)
+      window.removeEventListener('popstate', updatePageUrl)
+    }
+  }, [pollIntervalMs])
+
+  return pageUrl
 }
 
 export default App

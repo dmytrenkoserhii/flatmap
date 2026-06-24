@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import mapTilerStyles from '@maptiler/sdk/style.css?inline'
 import styles from './App.css?inline'
@@ -18,9 +17,5 @@ if (!document.getElementById(ROOT_ID)) {
   shadowRoot.append(style, reactRoot)
   document.body.append(host)
 
-  createRoot(reactRoot).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  )
+  createRoot(reactRoot).render(<App />)
 }
