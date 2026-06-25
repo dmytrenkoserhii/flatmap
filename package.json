@@ -1,7 +1,7 @@
 {
   "name": "flatmap",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@maptiler/client": "3.0.2",
+    "@maptiler/sdk": "4.0.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

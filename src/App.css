@@ -11,6 +11,12 @@
     sans-serif;
 }
 
+.flatmap-widget {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+}
+
 .flatmap-button {
   padding: 10px 16px;
   border: 0;
@@ -31,4 +37,118 @@
 .flatmap-button:focus-visible {
   outline: 3px solid #23e5db;
   outline-offset: 2px;
+}
+
+.flatmap-panel {
+  display: grid;
+  width: min(380px, calc(100vw - 32px));
+  min-height: 340px;
+  overflow: hidden;
+  border: 1px solid rgb(0 47 52 / 12%);
+  border-radius: 16px;
+  color: #002f34;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 22%);
+}
+
+.flatmap-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgb(0 47 52 / 10%);
+}
+
+.flatmap-panel__header h2,
+.flatmap-panel__header p,
+.flatmap-state p {
+  margin: 0;
+}
+
+.flatmap-panel__header h2 {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.flatmap-panel__header p {
+  margin-top: 4px;
+  color: #406367;
+  font-size: 13px;
+}
+
+.flatmap-close {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: #002f34;
+  background: #f2f4f5;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.flatmap-close:hover {
+  background: #d8dfe0;
+}
+
+.flatmap-map {
+  min-height: 220px;
+}
+
+.flatmap-details {
+  display: grid;
+  gap: 4px;
+  padding: 12px 16px 16px;
+  font-size: 13px;
+}
+
+.flatmap-details strong {
+  font-size: 14px;
+}
+
+.flatmap-details span {
+  color: #406367;
+}
+
+.flatmap-state {
+  display: grid;
+  min-height: 260px;
+  place-content: center;
+  gap: 12px;
+  padding: 24px;
+  color: #406367;
+  text-align: center;
+}
+
+.flatmap-state--error {
+  color: #7a2e0e;
+}
+
+.flatmap-state button {
+  justify-self: center;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #002f34;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.flatmap-state button:hover {
+  background: #00474f;
+}
+
+@media (width <= 460px) {
+  :host {
+    right: 16px;
+    bottom: 16px;
+  }
 }
