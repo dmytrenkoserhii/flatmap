@@ -13,11 +13,21 @@ content script work; map and geocoding features will be added later.
 ## Setup
 
 ```powershell
+corepack enable
 pnpm install --frozen-lockfile
 ```
 
-For future MapTiler integration, copy `.env.example` to `.env.local` and add your
-key. The current version does not read the key or call MapTiler.
+Copy `.env.example` to `.env.local` and add your MapTiler key:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+```env
+VITE_MAPTILER_API_KEY=your_maptiler_key
+```
+
+The extension uses this key to geocode listing locations and render the map.
 
 ## Commands
 
